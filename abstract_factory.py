@@ -1,38 +1,79 @@
 import random
+import yaml
+from abc import ABC
 
 
-class AbstractLevel:
+class AbstractLevel(yaml.YAMLObject):
+    @classmethod
+    def from_yaml(Class, loader, node):
+        def easy_level_constructor(loader, node):
+            data = loader.construct_mapping(node)
+            _map = EasyLevel.Map()
+            _obj = EasyLevel.Objects()
+            _obj.config = data
+            return {'map': _map, 'obj': _obj}
+
+
+        def medium_level_constructor(loader, node):
+            data = loader.construct_mapping(node)
+            _map = MediumLevel.Map()
+            _obj = MediumLevel.Objects()
+            _obj.config = data
+            return {'map': _map, 'obj': _obj}
+
+
+        def hard_level_constructor(loader, node):
+            data = loader.construct_mapping(node)
+            _map = HardLevel.Map()
+            _obj = HardLevel.Objects()
+            _obj.config = data
+            return {'map': _map, 'obj': _obj}
+
+
+        loader.add_constructor('!easy_level', easy_level_constructor)
+        loader.add_constructor('!medium_level', medium_level_constructor)
+        loader.add_constructor('!hard_level', hard_level_constructor)
+        
+
     @classmethod
     def get_map(cls):
         return cls.Map()
-    
+
     @classmethod
     def get_objects(cls):
         return cls.Objects()
 
+    class Map(ABC):
+        pass
+
+    class Objects(ABC):
+        pass
+
 
 class EasyLevel(AbstractLevel):
+    yaml_tag = u'!easy_level'        # указываем соответствие
     class Map:
         def __init__(self):
-            self._map = [[0 for j in range(5)] for i in range(5)]
+            self.Map = [[0 for _ in range(5)] for _ in range(5)]
             for i in range(5):
                 for j in range(5):
                     if i == 0 or j == 0 or i == 4 or j == 4:
                         # граница карты
-                        self._map[j][i] = -1 
+                        self.Map[j][i] = -1
                     else:
                         # случайная характеристика области
-                        self._map[j][i] = random.randint(0, 2)
-        
+                        self.Map[j][i] = random.randint(0, 2)
+
         def get_map(self):
-            return self._map
+            return self.Map
 
     class Objects:
         def __init__(self):
             # размещаем переход на след. уровень
             self.objects = [('next_lvl', (2, 2))]
+            self.config = {}
 
-        def get_objects(self, map_obj):
+        def get_objects(self, _map):
             # размещаем противников
             for obj_name in ['rat']:
                 coord = (random.randint(1, 3), random.randint(1, 3))
@@ -49,31 +90,33 @@ class EasyLevel(AbstractLevel):
 
             return self.objects
 
-    
+
 class MediumLevel(AbstractLevel):
+    yaml_tag = u'!medium_level'        # указываем соответствие
     class Map:
         def __init__(self):
-            self._map = [[0 for j in range(8)] for i in range(8)]
+            self.Map = [[0 for _ in range(8)] for _ in range(8)]
             for i in range(8):
                 for j in range(8):
                     if i == 0 or j == 0 or i == 7 or j == 7:
                         # граница карты
-                        self._map[j][i] = -1  
+                        self.Map[j][i] = -1
                     else:
                         # случайная характеристика области
-                        self._map[j][i] = random.randint(0, 2)
+                        self.Map[j][i] = random.randint(0, 2)
 
         def get_map(self):
-            return self._map
-            
+            return self.Map
+
     class Objects:
         def __init__(self):
             # размещаем переход на след. уровень
             self.objects = [('next_lvl', (4, 4))]
+            self.config = {'enemy': []}
 
-        def get_objects(self, map_obj):
+        def get_objects(self, _map):
             # размещаем врагов
-            for obj_name in ['rat', 'snake']:
+            for obj_name in self.config['enemy']:
                 coord = (random.randint(1, 6), random.randint(1, 6))
                 # ищем случайную свободную локацию
                 intersect = True
@@ -87,46 +130,49 @@ class MediumLevel(AbstractLevel):
                 self.objects.append((obj_name, coord))
 
             return self.objects
-    
-        
+
+
 class HardLevel(AbstractLevel):
+    yaml_tag = u'!hard_level'        # указываем соответствие
     class Map:
         def __init__(self):
-            self._map = [[0 for j in range(10)] for i in range(10)]
+            self.Map = [[0 for _ in range(10)] for _ in range(10)]
             for i in range(10):
                 for j in range(10):
                     if i == 0 or j == 0 or i == 9 or j == 9:
-                        # граница карты
-                        self._map[j][i] = -1
+                        # граница карты :: непроходимый участок карты
+                        self.Map[j][i] = -1
                     else:
-                        # характеристика области (-1 для непроходимой обл.)
-                        self._map[j][i] = random.randint(-1, 8)
+                        # случайная характеристика области
+                        self.Map[j][i] = random.randint(-1, 8)
 
         def get_map(self):
-            return self._map
-     
+            return self.Map
+
     class Objects:
         def __init__(self):
             # размещаем переход на след. уровень
             self.objects = [('next_lvl', (5, 5))]
+            self.config = {'enemy_count': 5, 'enemy': []}
 
-        def get_objects(self, map_obj):
+        def get_objects(self, _map):
             # размещаем врагов
-            for obj_name in ['rat', 'snake']:
-                coord = (random.randint(1, 8), random.randint(1, 8))
-                # ищем случайную свободную локацию
-                intersect = True
-                while intersect:
-                    intersect = False
-                    if map_obj[coord[0]][coord[1]] == -1:
-                        intersect = True
-                        coord = (random.randint(1, 8), random.randint(1, 8))
-                        continue
-                    for obj in self.objects:
-                        if coord == obj[1]:
+            for obj_name in self.config['enemy']:
+                for tmp_int in range(self.config['enemy_count']):
+                    coord = (random.randint(1, 8), random.randint(1, 8))
+                    # ищем случайную свободную локацию
+                    intersect = True
+                    while intersect:
+                        intersect = False
+                        if _map[coord[0]][coord[1]] == -1:
                             intersect = True
                             coord = (random.randint(1, 8), random.randint(1, 8))
+                            continue
+                        for obj in self.objects:
+                            if coord == obj[1]:
+                                intersect = True
+                                coord = (random.randint(1, 8), random.randint(1, 8))
 
-                self.objects.append((obj_name, coord))
+                    self.objects.append((obj_name, coord))
 
             return self.objects
