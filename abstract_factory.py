@@ -5,35 +5,12 @@ from abc import ABC
 
 class AbstractLevel(yaml.YAMLObject):
     @classmethod
-    def from_yaml(Class, loader, node):
-        def easy_level_constructor(loader, node):
-            data = loader.construct_mapping(node)
-            _map = EasyLevel.Map()
-            _obj = EasyLevel.Objects()
-            _obj.config = data
+    def from_yaml(cls, loader, node):
+        _map = cls.Map()
+        _obj = cls.Objects()
+        config = loader.construct_mapping(node)
+        _obj.config.update(config)
             return {'map': _map, 'obj': _obj}
-
-
-        def medium_level_constructor(loader, node):
-            data = loader.construct_mapping(node)
-            _map = MediumLevel.Map()
-            _obj = MediumLevel.Objects()
-            _obj.config = data
-            return {'map': _map, 'obj': _obj}
-
-
-        def hard_level_constructor(loader, node):
-            data = loader.construct_mapping(node)
-            _map = HardLevel.Map()
-            _obj = HardLevel.Objects()
-            _obj.config = data
-            return {'map': _map, 'obj': _obj}
-
-
-        loader.add_constructor('!easy_level', easy_level_constructor)
-        loader.add_constructor('!medium_level', medium_level_constructor)
-        loader.add_constructor('!hard_level', hard_level_constructor)
-        
 
     @classmethod
     def get_map(cls):
