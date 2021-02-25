@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pygame
 import random
+import Service
 
 
 def create_sprite(img, sprite_size):
@@ -15,9 +16,9 @@ class AbstractObject(ABC):
     def __init__(self) -> None:
         super().__init__()
     
-    # @abstractmethod
-    # def draw(self, display):
-    #     pass
+    @abstractmethod
+    def draw(self, display):
+        pass
 
 
 class Interactive(ABC):
@@ -36,6 +37,9 @@ class Ally(AbstractObject, Interactive):
 
     def interact(self, engine, hero):
         self.action(engine, hero)
+    
+    def draw(self, display):
+        display.draw_object(self.sprite, self.position)
 
 
 class Creature(AbstractObject):
@@ -49,6 +53,9 @@ class Creature(AbstractObject):
 
     def calc_max_HP(self):
         self.max_hp = 5 + self.stats["endurance"] * 2
+    
+    def draw(self, display):
+        display.draw_object(self.sprite, self.position)
 
 
 class Hero(Creature):
@@ -140,43 +147,47 @@ class Effect(Hero):
 
 class Enemy(Creature, Interactive):
     def __init__(self, icon, stats, xp, position):
-        super().__init__(icon, stats, xp, position)
+        self.sprite = icon
+        self.stats = stats
+        self.position = position
+        self.calc_max_HP()
+        self.hp = self.max_hp
+        self.exp = xp
+        self.action = Service.add_gold
     
     def interact(self, engine, hero):
-        return super().interact(engine, hero)
+        hit = bool(random.getrandbits(1))
+        if hit:
+            hero.hp -= self.stats['strength']
+        if hero.hp <= 0:
+            hero.hp = 0
+            engine.notify("GAME OVER")
+            engine.game_process = False
+        else:
+            hero.exp += self.exp
+            for m in hero.level_up():
+                engine.notify(m)
+            self.action(engine, hero)
 
 
 class Berserk(Effect):
     def apply_effect(self):
-        self.stats = self.base.get_stats()
-        self.stats['Strength'] += 7
-        self.stats['Endurance'] += 7
-        self.stats['Agility'] += 7
-        self.stats['Luck'] += 7
-        self.stats['Perception'] -= 3
-        self.stats['Charisma'] -= 3
-        self.stats['Intelligence'] -= 3
-        self.stats['HP'] += 50
-        return self.stats
+        self.hp = self.base.hp + 50
+        self.stats["strength"] += 7
+        self.stats["endurance"] += 7
+        self.stats["intelligence"] -= 3
+        self.stats["luck"] += 7
 
 
 class Blessing(Effect):
     def apply_effect(self):
-        self.stats = self.base.get_stats()
-        self.stats["Strength"] += 2
-        self.stats["Perception"] += 2
-        self.stats["Endurance"] += 2
-        self.stats["Charisma"] += 2
-        self.stats["Intelligence"] += 2
-        self.stats["Agility"] += 2
-        self.stats["Luck"] += 2
-        return self.stats
+        self.stats["strength"] += 2
+        self.stats["endurance"] += 2
+        self.stats["intelligence"] += 2
+        self.stats["luck"] += 2
 
 
 class Weakness(Effect):
     def apply_effect(self):
-        self.stats = self.base.get_stats()
-        self.stats['Strength'] -= 4
-        self.stats['Endurance'] -= 4
-        self.stats['Agility'] -= 4
-        return self.stats
+        self.stats["strength"] -= 4
+        self.stats["endurance"] -= 4

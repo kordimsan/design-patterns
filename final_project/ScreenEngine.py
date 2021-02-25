@@ -32,14 +32,17 @@ class ScreenHandle(pygame.Surface):
 
     # FIXME connect_engine
     def connect_engine(self, engine):
-        self.engine = engine
+        if self.successor is not None:
+            return self.successor.connect_engine(engine)
 
 
 class GameSurface(ScreenHandle):
 
     def connect_engine(self, engine):
         # FIXME save engine and send it to next in chain
-        self.engine = engine
+        self.game_engine = engine
+        if self.successor is not None:
+            return self.successor.connect_engine(engine)
 
     def draw_hero(self):
         self.game_engine.hero.draw(self)
@@ -50,7 +53,7 @@ class GameSurface(ScreenHandle):
 
         min_x = 0
         min_y = 0
-
+        min_x, min_y = self.calculate(min_x, min_y)
     ##
 
         if self.game_engine.map:
@@ -67,6 +70,7 @@ class GameSurface(ScreenHandle):
 
         min_x = 0
         min_y = 0
+        min_x, min_y = self.calculate(min_x, min_y)
 
     ##
         self.blit(sprite, ((coord[0] - min_x) * self.game_engine.sprite_size,
@@ -78,6 +82,7 @@ class GameSurface(ScreenHandle):
 
         min_x = 0
         min_y = 0
+        min_x, min_y = self.calculate(min_x, min_y)
 
     ##
         self.draw_map()
@@ -88,6 +93,19 @@ class GameSurface(ScreenHandle):
 
     # draw next surface in chain
 
+        if self.successor is not None:
+            canvas.blit(self.successor, self.next_coord)
+            return self.successor.draw(canvas)
+
+    def calculate(self, min_x, min_y):
+        screen_size = list(self.get_size())
+        screen_size[0] /= self.game_engine.sprite_size
+        screen_size[1] /= self.game_engine.sprite_size
+        hero_pos = self.game_engine.hero.position
+        min_x = int(max(0, hero_pos[0] - screen_size[0] + 3))
+        min_y = int(max(0, hero_pos[1] - screen_size[1] + 3))
+        return (min_x, min_y)
+
 
 class ProgressBar(ScreenHandle):
 
@@ -97,7 +115,9 @@ class ProgressBar(ScreenHandle):
 
     def connect_engine(self, engine):
         # FIXME save engine and send it to next in chain
-        pass
+        self.engine = engine
+        if self.successor is not None:
+            return self.successor.connect_engine(engine)
 
     def draw(self, canvas):
         self.fill(colors["wooden"])
@@ -152,6 +172,9 @@ class ProgressBar(ScreenHandle):
                   (550, 70))
 
     # draw next surface in chain
+        if self.successor is not None:
+            canvas.blit(self.successor, self.next_coord)
+            return self.successor.draw(canvas)
 
 
 class InfoWindow(ScreenHandle):
@@ -176,11 +199,17 @@ class InfoWindow(ScreenHandle):
 
     # FIXME
     # draw next surface in chain
+        if self.successor is not None:
+            canvas.blit(self.successor, self.next_coord)
+            return self.successor.draw(canvas)
 
     def connect_engine(self, engine):
         # FIXME set this class as Observer to engine and send it to next in
         # chain
         self.engine = engine
+        engine.subscribe(self)
+        if self.successor is not None:
+            return self.successor.connect_engine(engine)
 
 
 class HelpWindow(ScreenHandle):
@@ -203,6 +232,8 @@ class HelpWindow(ScreenHandle):
     def connect_engine(self, engine):
         # FIXME save engine and send it to next in chain
         self.engine = engine
+        if self.successor is not None:
+            return self.successor.connect_engine(engine)
 
     def draw(self, canvas):
         alpha = 0
@@ -222,3 +253,6 @@ class HelpWindow(ScreenHandle):
                           (150, 50 + 30 * i))
     # FIXME
     # draw next surface in chain
+        if self.successor is not None:
+            canvas.blit(self.successor, self.next_coord)
+            return self.successor.draw(canvas)
