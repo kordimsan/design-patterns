@@ -11,6 +11,15 @@ def create_sprite(img, sprite_size):
     return sprite
 
 
+class AbstractObject(ABC):
+    def __init__(self) -> None:
+        super().__init__()
+    
+    # @abstractmethod
+    # def draw(self, display):
+    #     pass
+
+
 class Interactive(ABC):
 
     @abstractmethod
@@ -127,3 +136,47 @@ class Effect(Hero):
 
 # FIXME
 # add classes        
+
+
+class Enemy(Creature, Interactive):
+    def __init__(self, icon, stats, xp, position):
+        super().__init__(icon, stats, xp, position)
+    
+    def interact(self, engine, hero):
+        return super().interact(engine, hero)
+
+
+class Berserk(Effect):
+    def apply_effect(self):
+        self.stats = self.base.get_stats()
+        self.stats['Strength'] += 7
+        self.stats['Endurance'] += 7
+        self.stats['Agility'] += 7
+        self.stats['Luck'] += 7
+        self.stats['Perception'] -= 3
+        self.stats['Charisma'] -= 3
+        self.stats['Intelligence'] -= 3
+        self.stats['HP'] += 50
+        return self.stats
+
+
+class Blessing(Effect):
+    def apply_effect(self):
+        self.stats = self.base.get_stats()
+        self.stats["Strength"] += 2
+        self.stats["Perception"] += 2
+        self.stats["Endurance"] += 2
+        self.stats["Charisma"] += 2
+        self.stats["Intelligence"] += 2
+        self.stats["Agility"] += 2
+        self.stats["Luck"] += 2
+        return self.stats
+
+
+class Weakness(Effect):
+    def apply_effect(self):
+        self.stats = self.base.get_stats()
+        self.stats['Strength'] -= 4
+        self.stats['Endurance'] -= 4
+        self.stats['Agility'] -= 4
+        return self.stats

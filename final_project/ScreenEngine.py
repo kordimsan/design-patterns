@@ -1,5 +1,6 @@
 import pygame
 import collections
+import Logic
 
 colors = {
     "black": (0, 0, 0, 255),
@@ -30,12 +31,15 @@ class ScreenHandle(pygame.Surface):
             self.successor.draw(canvas)
 
     # FIXME connect_engine
+    def connect_engine(self, engine):
+        self.engine = engine
 
 
 class GameSurface(ScreenHandle):
 
     def connect_engine(self, engine):
         # FIXME save engine and send it to next in chain
+        self.engine = engine
 
     def draw_hero(self):
         self.game_engine.hero.draw(self)
@@ -93,6 +97,7 @@ class ProgressBar(ScreenHandle):
 
     def connect_engine(self, engine):
         # FIXME save engine and send it to next in chain
+        pass
 
     def draw(self, canvas):
         self.fill(colors["wooden"])
@@ -175,6 +180,7 @@ class InfoWindow(ScreenHandle):
     def connect_engine(self, engine):
         # FIXME set this class as Observer to engine and send it to next in
         # chain
+        self.engine = engine
 
 
 class HelpWindow(ScreenHandle):
@@ -196,6 +202,7 @@ class HelpWindow(ScreenHandle):
 
     def connect_engine(self, engine):
         # FIXME save engine and send it to next in chain
+        self.engine = engine
 
     def draw(self, canvas):
         alpha = 0
